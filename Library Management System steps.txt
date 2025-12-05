@@ -1,0 +1,487 @@
+Library Management System 	(folder)
+
+
+-------------- backend --------------
+
+-> create folder Backend
+
+-> In Backend folder install packages
+	
+	> npm i express
+	> npm i mysql2
+	> npm i cors
+	> npm i init -y    ( default json package)
+	
+-> create server.js file in Backend
+
+-> server.js 
+
+// server.js
+
+const express = require('express');
+const mysql = require('mysql2');
+const cors = require('cors');
+
+//-------------------------------------------------------------
+
+const app = express();
+const portNo = 1234;
+
+//-------------------------------------------------------------
+
+app.use(express.urlencoded({extended:true}));
+app.use(express.json());
+app.use(cors())
+
+//-------------------------------------------------------------
+
+const db = mysql.createConnection({
+    host : 'localhost',
+    user : 'root',
+    password : 'root',
+    database : 'library'
+})
+
+//-------------------------------------------------------------
+
+db.connect((err)=>{
+    if(err==null){
+        console.log("COnnection create succefully.")
+    }
+    else{
+        console.error(err.message)
+    }
+})
+
+//-------------------------------------------------------------
+
+const view = "Select * from Books";
+const add = "Insert Into Books (title,author,year,status) Value (?,?,?,?)";
+const update = "Update Books Set title=?, author=?, year=?, status=? where BookId=?";
+const deleteBook = "Delete from Books Where BookId=?";
+
+//-------------------------------------------------------------
+
+app.get('/allBooks',(req,res)=>{
+
+    db.query(view,(err,result)=>{
+        if(err){
+            res.status(500).json({error:err.message});
+            return;
+        }
+        else{
+            res.json(result);
+        }
+    })
+})
+
+app.post('/add',(req,res)=>{
+
+    const {title,author,year,status} = req.body;
+
+    const newstatus = (status==='true' || status===true ? 1 : 0);
+
+    db.query(add,[title,author,year,newstatus],(err,result)=>{
+        if(err){
+            res.status(500).json({error:err.message})
+            return;
+        }
+        else{
+            const newbook ={
+                bookid : result.insertId,
+                title,
+                author,
+                year,
+                status:newstatus
+            }
+            res.json(newbook);
+        }
+    })
+
+})
+
+
+app.put('/update/:id',(req,res)=>{
+
+    const {id} = req.params;
+
+    const {title,author,year,status} = req.body;
+
+    const newstatus = (status==='true' || status===true ? 1 : 0);
+
+    db.query(update, [title,author,year,newstatus,id], (err,result) =>{
+        if(err){
+            res.status(500).json({error:err.message})
+            return;
+        }
+        else{
+            const newbook ={
+                bookid : result.insertId,
+                title,
+                author,
+                year,
+                status:newstatus
+            }
+            res.json(newbook);
+        }
+    })
+})
+
+app.delete('/delete/:id',(req,res)=>{
+
+    const {id} = req.params;
+
+    db.query(deleteBook, [id], (err,result) =>{
+
+        if(err){
+            res.status(500).json({error:err.message})
+            return;
+        }
+        else{
+            res.json(result);
+        }
+    })
+})
+
+//-------------------------------------------------------------
+
+app.listen(portNo,(err)=>{
+
+    if(err){
+        console.error(err.message);
+    }
+    else{
+        console.log(`Server connected at http://localhost:${portNo}`)
+    }
+}
+)
+
+
+========================================================================================	
+
+* Frontend >
+
+	> npm create vite@latest
+	> npm install axios
+	> npm installbootstrap
+
+Folders : 1) Components
+		-> Library.jsx 		(first later capital)
+          2) Services
+		-> bookservices.js
+
+
+2) Services > 
+
+ -->  bookservices.js 
+
+// node code 
+
+
+import axios from 'axios'
+
+const base_url = "http://localhost:1234";
+
+export const bookService = {
+
+    getAllBooks : async() =>(await axios.get(`${base_url}/allBooks`)).data,
+
+    add : async(record) =>(await axios.post(`${base_url}/add`,record)).data,
+
+    update : async(id,record) =>(await axios.put(`${base_url}/update/${id}`,record)).data,
+
+    deletebook : async(id) =>(await axios.delete(`${base_url}/delete/${id}`)).data
+
+}
+
+
+------------------------------------------------------------
+
+import this bookservices to Library.js
+
+-> import { bookService } from '../services/bookServices'
+
+------------------------------------------------------------
+
+-->  Library.jsx
+
+
+// react  > rfc for short cut of sample
+// frontend all in one file
+
+
+import { useState, useEffect } from 'react'
+import { bookService } from '../Services/bookService'
+import './Library.css'
+
+export default function Library() {
+
+    const [books, setBook] = useState([]);
+
+    const [edit, setEdit] = useState(false);
+
+    const [form, setForm] = useState({
+        id : "",
+        title : "",
+        author : "",
+        year:"",
+        status :""
+    })
+
+    // useEffect
+
+    useEffect(() => {
+        bookService.getAllBooks().then((data)=>{
+            console.log("Fetched data : ",data)
+            setBook(data);
+        })
+    },[]);
+
+    // onchange
+
+    const handleChange = (e) => {
+        setForm({...form, [e.target.name] : e.target.value});
+    }
+
+    // onclick
+
+    const handleAddBook = async()=>{
+        
+        await bookService.add(form);
+        const updatedList = await bookService.getAllBooks();
+        setBook(updatedList);
+
+        setForm({
+            title:"",
+            author:"",
+            year:"",
+            status:""
+        })
+    }
+
+    const handleEdit = (book) =>{
+        setForm({
+            id : book.bookId,
+            title : book.title,
+            author : book.author,
+            year : book.year,
+            status : book.status
+        })
+
+        setEdit(true);
+    }
+
+    const handleUpdateBook = async()=>{
+        await bookService.update(form.id,form);
+        const updatedList = await bookService.getAllBooks();
+        setBook(updatedList);
+
+        setForm({
+            title:"",
+            author:"",
+            year:"",
+            status:""
+        })
+        setEdit(false);
+    }
+
+    const handleDeleteBook = async(id)=>{
+
+        await bookService.deletebook(id);
+        const updatedList = await bookService.getAllBooks();
+        setBook(updatedList);
+
+    }
+
+    return (
+        <>
+        
+        <h1>Library Management System</h1>
+        <hr />
+
+        <form action="">
+            <div>
+                <input type="text" placeholder='Enter book title' name='title' value={form.title} onChange={handleChange} required/> 
+
+                <input type="text" placeholder='Enter book author' name='author' value={form.author} onChange={handleChange} required/> 
+
+                <input type="text" placeholder='Enter book publish year' name='year' value={form.year} onChange={handleChange} required/> 
+
+                <input type="boolean" placeholder='Availability 0/1' name='status' value={form.status} onChange={handleChange} />
+            </div>
+
+            <div >
+                <button onClick={handleAddBook} >Add Book</button>
+                <button onClick={handleUpdateBook}>Update Book</button>
+            </div>
+
+        </form>
+
+        <hr />
+
+        <h2>All Books Data</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Book Title</th>
+                    <th>Book Author</th>
+                    <th>Publish Year</th>
+                    <th>Availability</th>
+                    <th>Buttons</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {
+                    books.map((book) => (
+                        <tr key={book.bookId}>
+                            <td>{book.title}</td>
+                            <td>{book.author}</td>
+                            <td>{book.year}</td>
+                            <td>{book.status}</td>
+                            <td>
+                                <button onClick={()=>(handleEdit(book))}>Edit</button>
+                                <button onClick={()=>(handleDeleteBook(book.bookId))}>Delete</button>
+                            </td>
+                        </tr>
+
+                    ))
+                }
+
+            </tbody>
+        </table>
+
+        </>
+    )
+}
+
+-----------------------------------------------------------------
+
+now import this in app.jsx  :-
+
+import Library from './components/Library'
+
+return (
+    <>
+      <Library/>
+    </>
+  )
+
+-------------------------------------------------------------------
+
+run both frontend and backend
+
+frontend ==>  npm run dev
+
+backend ==> node server.js
+
+
+
+
+----------------------------------------------------------------------
+
+* Componenets : Library.css
+
+
+/* === Page layout === */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f5f6fa;
+}
+
+/* === Heading === */
+
+h1 {
+  text-align: center;
+  color: #2f3640;
+  margin-top: 10px;
+}
+
+h2 {
+  text-align: center;
+  color: #353b48;
+  margin-top: 20px;
+}
+
+/* === Table design === */
+table {
+  width: 90%;
+  margin: 10px auto;
+  border-collapse: collapse;
+  box-shadow: 0 10px 10px rgba(0,0,0,0.1);
+  background: white;
+  border-radius: 20px;      
+  overflow: hidden;
+}
+
+th, td {
+  border: 1px solid #dcdde1;
+  padding: 10px 10px;
+  text-align: center;
+  color: black;
+}
+
+th {
+  background-color: #40739e;
+  color: white;
+  text-transform: uppercase;
+}
+
+tr:nth-child(even) {
+  background-color: #f1f2f6;
+}
+
+tr:hover {
+  background-color: #dcdde1;
+}
+
+/* === Buttons === */
+
+button {
+  padding: 5px 10px;
+  margin: 3px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.8;
+}
+
+button:first-child {
+  background-color: #44bd32;
+  color: white;
+}
+
+button:last-child {
+  background-color: #e84118;
+  color: white;
+}
+
+/* === Form design === */
+
+form {
+  width: 70%;
+  margin: 30px auto;
+  justify-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+form input {
+  margin: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 0 5px rgba(64,115,158,0.4);
+}
+
+
+form button {
+  width: 120px;
+  margin-top: 30px;
+}
+
+
+

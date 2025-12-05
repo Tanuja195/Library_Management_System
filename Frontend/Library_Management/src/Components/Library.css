@@ -1,0 +1,98 @@
+/* === Page layout === */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f5f6fa;
+}
+
+/* === Heading === */
+
+h1 {
+  text-align: center;
+  color: #2f3640;
+  margin-top: 10px;
+}
+
+h2 {
+  text-align: center;
+  color: #353b48;
+  margin-top: 20px;
+}
+
+/* === Table design === */
+table {
+  width: 90%;
+  margin: 10px auto;
+  border-collapse: collapse;
+  box-shadow: 0 10px 10px rgba(0,0,0,0.1);
+  background: white;
+  border-radius: 20px;      
+  overflow: hidden;
+}
+
+th, td {
+  border: 1px solid #dcdde1;
+  padding: 10px 10px;
+  text-align: center;
+  color: black;
+}
+
+th {
+  background-color: #40739e;
+  color: white;
+  text-transform: uppercase;
+}
+
+tr:nth-child(even) {
+  background-color: #f1f2f6;
+}
+
+tr:hover {
+  background-color: #dcdde1;
+}
+
+/* === Buttons === */
+
+button {
+  padding: 5px 10px;
+  margin: 3px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.8;
+}
+
+button:first-child {
+  background-color: #44bd32;
+  color: white;
+}
+
+button:last-child {
+  background-color: #e84118;
+  color: white;
+}
+
+/* === Form design === */
+
+form {
+  width: 70%;
+  margin: 30px auto;
+  justify-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+form input {
+  margin: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 0 5px rgba(64,115,158,0.4);
+}
+
+
+form button {
+  width: 120px;
+  margin-top: 30px;
+}
